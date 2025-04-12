@@ -1,0 +1,50 @@
+import pandas as pd
+
+# File paths
+files = {
+    '2019': 'sec_extractions_2019_with_cik.csv',
+    '2020': 'sec_extractions_2020_with_cik.csv',
+    '2021': 'sec_extractions_2021_with_cik.csv',
+    '2022': 'sec_extractions_2022_with_cik.csv',
+    '2023': 'items_filtered_10K_filings_2023_1.csv',
+}
+
+# Load and normalize CIKs
+dataframes = {}
+cik_sets = {}
+
+for year, path in files.items():
+    print(f"\n🔍 Loading {year}: {path}")
+    
+    if year == '2023':
+        df = pd.read_csv(path, sep=';', on_bad_lines='skip', engine='python')
+        df.columns = df.columns.str.strip().str.lower()
+        df = df.rename(columns={
+            'item_1': 'item1',
+            'item_1a': 'item1a',
+            'item_7': 'item7',
+            'item_8': 'item8'
+        })
+    else:
+        df = pd.read_csv(path, on_bad_lines='skip', engine='python')
+        df.columns = df.columns.str.strip().str.lower()
+    
+    if 'cik' not in df.columns:
+        raise ValueError(f"❌ No 'cik' column found in {year} after normalization.")
+    
+    df['cik'] = df['cik'].astype(str).str.strip()
+    df = df.dropna(subset=['cik'])
+    dataframes[year] = df
+    cik_sets[year] = set(df['cik'])
+
+# ✅ Get common firms across all years
+common_ciks = set.intersection(*cik_sets.values())
+print(f"\n✅ Found {len(common_ciks)} common firms based on CIK.")
+
+# Filter each dataset to include only common CIKs
+for year, df in dataframes.items():
+    filtered_df = df[df['cik'].isin(common_ciks)].copy()
+    out_path = f'sec_common_firms_{year}.csv'
+    filtered_df.to_csv(out_path, index=False)
+    print(f"✅ Saved {len(filtered_df)} rows to {out_path}")
+
