@@ -9,7 +9,6 @@ files = {
     '2023': 'items_filtered_10K_filings_2023_1.csv',
 }
 
-# Load and normalize CIKs
 dataframes = {}
 cik_sets = {}
 
@@ -37,11 +36,10 @@ for year, path in files.items():
     dataframes[year] = df
     cik_sets[year] = set(df['cik'])
 
-# ✅ Get common firms across all years
 common_ciks = set.intersection(*cik_sets.values())
 print(f"\n✅ Found {len(common_ciks)} common firms based on CIK.")
 
-# Filter each dataset to include only common CIKs
+
 for year, df in dataframes.items():
     filtered_df = df[df['cik'].isin(common_ciks)].copy()
     out_path = f'sec_common_firms_{year}.csv'
